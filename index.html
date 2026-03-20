@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reloj del Amor ❤️ Nivel 6</title>
+<style>
+body {
+  font-family: 'Cursive', sans-serif;
+  background: linear-gradient(135deg, #f8c0c0, #ff4d6d);
+  color: white;
+  text-align: center;
+  margin: 0;
+  padding: 50px;
+  overflow-x: hidden;
+  transition: background 2s ease;
+}
+h1 { font-size:2em; margin-bottom:20px; }
+#contador { font-size:1.5em; margin-bottom:20px; }
+#hitos input, #hitos select { padding:5px; margin:5px; border-radius:5px; border:none; }
+#listaHitos li {
+  margin:5px 0; background-color: rgba(255,255,255,0.2);
+  padding:5px 10px; border-radius:10px; cursor:pointer;
+}
+button { padding:10px 20px; margin:10px; border:none; border-radius:10px; background-color:#fff; color:#ff4d6d; font-weight:bold; cursor:pointer;}
+button:hover { background-color:#ffe6eb; }
+#corazones,#confeti { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:hidden; }
+.corazon { position:absolute; font-size:20px; color:pink; animation:flotar 5s linear infinite; }
+@keyframes flotar { 0%{transform:translateY(0) scale(1); opacity:1;} 100%{transform:translateY(-600px) scale(1.5); opacity:0;} }
+.confeti { position:absolute; width:10px; height:10px; background-color:#fff; opacity:0.9; animation:caer 3s linear forwards; border-radius:50%; }
+@keyframes caer { 0%{transform:translateY(0);} 100%{transform:translateY(600px); opacity:0;} }
+#fotos { margin-top:20px; display:flex; justify-content:center; flex-wrap:wrap; }
+#fotos img { width:80px; height:80px; border-radius:15px; margin:5px; object-fit:cover; transition: transform 0.3s; }
+#fotos img:hover { transform: scale(1.2) rotate(-5deg); }
+.popup {
+  position: fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+  background-color: rgba(255,255,255,0.9); color:#ff4d6d;
+  padding:20px; border-radius:20px; font-size:1.5em;
+  display:none; z-index:1000; max-width:80%; text-align:center;
+}
+</style>
+</head>
+<body>
+
+<h1>Reloj del Amor ❤️ Nivel 6</h1>
+<div id="contador">Cargando...</div>
+
+<button id="personalizarBtn">Personalizar 🎨</button>
+<button id="modificarFechaBtn">Cambiar Fecha de Inicio</button>
+<button id="agregarFotoBtn">Agregar Foto</button>
+
+<section id="hitos">
+  <h3>Hitos importantes</h3>
+  <ul id="listaHitos"></ul>
+  <input type="text" id="nuevoHitoNombre" placeholder="Nombre del hito">
+  <input type="date" id="nuevoHitoFecha">
+  <input type="text" id="nuevaFotoHito" placeholder="URL foto para este hito (opcional)">
+  <input type="text" id="nuevaCancionHito" placeholder="URL canción para este hito (opcional)">
+  <button id="agregarHitoBtn">Agregar Hito</button>
+</section>
+
+<section id="mensajes">
+  <h3>Mensajes románticos</h3>
+  <div id="mensajeDia"></div>
+</section>
+
+<div id="corazones"></div>
+<div id="confeti"></div>
+<div id="fotos"></div>
+<div class="popup" id="popupMensaje"></div>
+
+<audio id="musicaFondo" loop></audio>
+<audio id="hitoSonido"><source src="https://www.soundjay.com/buttons/sounds/button-3.mp3" type="audio/mpeg"></audio>
+
+<script>
+// --- Contador ---
+let fechaInicio = localStorage.getItem("fechaInicio") || "2025-01-01T00:00:00";
+fechaInicio = new Date(fechaInicio);
+function actualizarContador() {
+  const ahora = new Date();
+  const diff = ahora - fechaInicio;
+  const dias = Math.floor(diff / (1000*60*60*24));
+  const horas = Math.floor((diff / (1000*60*60)) % 24);
+  const minutos = Math.floor((diff / (1000*60)) % 60);
+  const segundos = Math.floor((diff / 1000) % 60);
+  document.getElementById("contador").innerText =
+    `${dias} días ${horas} horas ${minutos} minutos ${segundos} segundos`;
+}
+actualizarContador();
+setInterval(actualizarContador,1000);
+
+// --- Hitos con fotos y canciones ---
+let hitos = JSON.parse(localStorage.getItem("hitos")) || [];
+const listaHitos = document.getElementById("listaHitos");
+function renderHitos(){
+  listaHitos.innerHTML="";
+  hitos.forEach((hito,i)=>{
+    const li=document.createElement("li");
+    li.innerText=`${hito.nombre} - ${hito.fecha}`;
+    li.addEventListener("click", ()=>{
+      if(confirm("¿Eliminar este hito?")){
+        hitos.splice(i,1);
+        localStorage.setItem("hitos", JSON.stringify(hitos));
+        renderHitos();
+      }
+    });
+    listaHitos.appendChild(li);
+  });
+  mostrarMensajeHito();
+}
+renderHitos();
+
+document.getElementById("agregarHitoBtn").addEventListener("click", ()=>{
+  const nombre=document.getElementById("nuevoHitoNombre").value;
+  const fecha=document.getElementById("nuevoHitoFecha").value;
+  const foto=document.getElementById("nuevaFotoHito").value;
+  const cancion=document.getElementById("nuevaCancionHito").value;
+  if(nombre && fecha){
+    hitos.push({nombre,fecha,foto,cancion});
+    localStorage.setItem("hitos", JSON.stringify(hitos));
+    renderHitos();
+    document.getElementById("nuevoHitoNombre").value="";
+    document.getElementById("nuevoHitoFecha").value="";
+    document.getElementById("nuevaFotoHito").value="";
+    document.getElementById("nuevaCancionHito").value="";
+  }else alert("Ingresa nombre y fecha del hito");
+});
+
+// --- Mensajes y efectos ---
+function mostrarMensajeHito(){
+  const hoy = new Date().toISOString().split("T")[0];
+  let mensaje="";
+  hitos.forEach(hito=>{
+    if(hito.fecha===hoy){
+      mensaje=`🎉 Hoy es el hito: ${hito.nombre}! ❤️`;
+      dispararConfeti();
+      document.getElementById("hitoSonido").play();
+      latidoCorazon();
+      mostrarPopup(mensaje);
+      if(hito.foto) agregarFoto(hito.foto);
+      if(hito.cancion){ document.getElementById("musicaFondo").src=hito.cancion; document.getElementById("musicaFondo").play();}
+    }
+  });
+  document.getElementById("mensajeDia").innerText = mensaje;
+}
+setInterval(mostrarMensajeHito,60000);
+
+// --- Corazones ---
+function crearCorazon(){
+  const corazon=document.createElement("div");
+  corazon.classList.add("corazon");
+  corazon.innerText="❤️";
+  corazon.style.left=Math.random()*window.innerWidth+"px";
+  corazon.style.fontSize=(10+Math.random()*30)+"px";
+  document.getElementById("corazones").appendChild(corazon);
+  setTimeout(()=>corazon.remove(),5000);
+}
+setInterval(crearCorazon,300);
+
+// --- Confeti ---
+function dispararConfeti(){
+  for(let i=0;i<30;i++){
+    const c=document.createElement("div");
+    c.classList.add("confeti");
+    c.style.left=Math.random()*window.innerWidth+"px";
+    c.style.backgroundColor=`hsl(${Math.random()*360},100%,70%)`;
+    document.getElementById("confeti").appendChild(c);
+    setTimeout(()=>c.remove(),3000);
+  }
+}
+
+// --- Latido ---
+function latidoCorazon(){
+  const contador=document.getElementById("contador");
+  contador.style.transform="scale(1.2)";
+  setTimeout(()=>contador.style.transform="scale(1)",500);
+}
+
+// --- Fotos ---
+let fotos = JSON.parse(localStorage.getItem("fotos")) || [];
+const fotosContainer = document.getElementById("fotos");
+function renderFotos(){ fotosContainer.innerHTML=""; fotos.forEach((src,i)=>{ const img=document.createElement("img"); img.src=src; img.alt="Foto"; img.title="Click para eliminar"; img.addEventListener("click",()=>{ if(confirm("¿Eliminar esta foto?")){ fotos.splice(i,1); localStorage.setItem("fotos",JSON.stringify(fotos)); renderFotos(); } }); fotosContainer.appendChild(img); }); }
+renderFotos();
+function agregarFoto(url){ fotos.push(url); localStorage.setItem("fotos",JSON.stringify(fotos)); renderFotos(); }
+document.getElementById("agregarFotoBtn").addEventListener("click", ()=>{
+  const url = prompt("Ingresa URL de la foto:");
+  if(url) agregarFoto(url);
+});
+
+// --- Popup ---
+function mostrarPopup(msg){
+  const popup = document.getElementById("popupMensaje");
+  popup.innerText = msg;
+  popup.style.display="block";
+  setTimeout(()=>{ popup.style.display="none"; },5000);
+}
+
+// --- Personalización ---
+document.getElementById("personalizarBtn").addEventListener("click", ()=>{
+  const color=prompt("Elige color de fondo o HEX:","#ff4d6d");
+  if(color){document.body.style.background=color; localStorage.setItem("fondo",color);}
+  const tipografias=["Cursive","Arial","Verdana","Georgia","Times New Roman"];
+  const tip=prompt("Elige tipografía:\n1) Cursive\n2) Arial\n3) Verdana\n4) Georgia\n5) Times New Roman","1");
+  const index=parseInt(tip)-1;
+  if(tipografias[index]){document.body.style.fontFamily=tipografias[index]; localStorage.setItem("tipografia",tipografias[index]);}
+  const reproducir=confirm("¿Reproducir música de fondo?");
+  const musica=document.getElementById("musicaFondo");
+  if(reproducir) musica.play(); else musica.pause();
+});
+
+// --- Modificar fecha ---
+document.getElementById("modificarFechaBtn").addEventListener("click", ()=>{
+  const fecha=prompt("Ingresa nueva fecha de inicio (AAAA-MM-DD):",fechaInicio.toISOString().split("T")[0]);
+  if(fecha){ fechaInicio=new Date(fecha+"T00:00:00"); localStorage.setItem("fechaInicio",fechaInicio.toISOString()); actualizarContador();}
+});
+
+// --- Aplicar personalizaciones guardadas ---
+const fondoGuardado = localStorage.getItem("fondo"); if(fondoGuardado) document.body.style.background=fondoGuardado;
+const tipografiaGuardada = localStorage.getItem("tipografia"); if(tipografiaGuardada) document.body.style.fontFamily=tipografiaGuardada;
+
+</script>
+</body>
+</html>
